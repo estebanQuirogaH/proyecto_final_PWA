@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
-import { createPersonMock, getAllPersonsMock } from '../api/personas_api'
-import FormField   from '../components/FormField'
-import InputField  from '../components/InputField'
+import {
+  createPersonMock, getAllPersonsMock,
+  updatePersonMock, deletePersonMock
+} from '../api/personas_api'
+import FormField  from '../components/FormField'
+import InputField from '../components/InputField'
 
 const document_types = ['CC', 'CE', 'Passport', 'TI']
 
-const initial_form = {
+const empty_form = {
   nombres:       '',
   apellidos:     '',
   tipoDocumento: 'CC',
@@ -18,20 +21,19 @@ const initial_form = {
 }
 
 export default function Personas() {
-  const [form_data, setFormData]   = useState(initial_form)
-  const [persons, setPersons]      = useState([])
-  const [is_loading, setIsLoading] = useState(false)
-  const [success_msg, setSuccessMsg] = useState('')
-  const [error_msg, setErrorMsg]     = useState('')
-  const [show_form, setShowForm]     = useState(false)
+  const [form_data, setFormData]       = useState(empty_form)
+  const [persons, setPersons]          = useState([])
+  const [is_loading, setIsLoading]     = useState(false)
+  const [success_msg, setSuccessMsg]   = useState('')
+  const [error_msg, setErrorMsg]       = useState('')
+  const [show_form, setShowForm]       = useState(false)
+  const [editing_id, setEditingId]     = useState(null)
+  const [delete_confirm, setDeleteConfirm] = useState(null)
 
-  useEffect(() => {
-    loadPersons()
-  }, [])
+  useEffect(() => { loadPersons() }, [])
 
   const loadPersons = async () => {
     try {
-      // Swap getAllPersonsMock → getAllPersons when API is ready
       const data = await getAllPersonsMock()
       setPersons(data)
     } catch (err) {
@@ -44,6 +46,32 @@ export default function Personas() {
     setErrorMsg('')
   }
 
+  const handleEdit = (person) => {
+    setFormData({
+      nombres:       person.nombres,
+      apellidos:     person.apellidos,
+      tipoDocumento: person.tipoDocumento,
+      documento:     person.documento,
+      direccion:     person.direccion,
+      telefono:      person.telefono,
+      ciudad:        person.ciudad,
+      usuario:       person.usuario,
+      contrasena:    ''
+    })
+    setEditingId(person.id)
+    setShowForm(true)
+    setSuccessMsg('')
+    setErrorMsg('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleCancelForm = () => {
+    setFormData(empty_form)
+    setEditingId(null)
+    setShowForm(false)
+    setErrorMsg('')
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
@@ -51,16 +79,31 @@ export default function Personas() {
     setSuccessMsg('')
 
     try {
-      // Swap createPersonMock → createPerson when API is ready
-      await createPersonMock(form_data)
-      setSuccessMsg('Person registered successfully')
-      setFormData(initial_form)
+      if (editing_id) {
+        await updatePersonMock(editing_id, form_data)
+        setSuccessMsg(`${form_data.nombres} updated successfully`)
+      } else {
+        await createPersonMock(form_data)
+        setSuccessMsg(`${form_data.nombres} registered successfully`)
+      }
+      setFormData(empty_form)
+      setEditingId(null)
       setShowForm(false)
       await loadPersons()
     } catch (err) {
-      setErrorMsg('Error registering person. Please try again.')
+      setErrorMsg('Error saving person. Please try again.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleDelete = async (id) => {
+    try {
+      await deletePersonMock(id)
+      setDeleteConfirm(null)
+      await loadPersons()
+    } catch (err) {
+      console.error('Error deleting person:', err)
     }
   }
 
@@ -71,29 +114,34 @@ export default function Personas() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-800">People</h1>
-          <p className="text-gray-400 text-sm mt-0.5">Register owners and surveyors</p>
+          <p className="text-gray-400 text-sm mt-0.5">
+            Register and manage owners and surveyors
+          </p>
         </div>
-        <button
-          onClick={() => setShowForm(prev => !prev)}
-          className="bg-violet-600 hover:bg-violet-700 text-white text-sm
-                     font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          {show_form ? 'Cancel' : '+ New person'}
-        </button>
+        {!show_form && (
+          <button
+            onClick={() => { setShowForm(true); setEditingId(null); setFormData(empty_form) }}
+            className="bg-violet-600 hover:bg-violet-700 text-white text-sm
+                       font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            + New person
+          </button>
+        )}
       </div>
 
-      {/* Success message */}
       {success_msg && (
         <div className="bg-green-50 border border-green-200 text-green-700
                         text-sm rounded-lg px-4 py-3">
-          {success_msg}
+          ✅ {success_msg}
         </div>
       )}
 
       {/* Form */}
       {show_form && (
         <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-medium text-gray-800 mb-5">New person</h2>
+          <h2 className="text-lg font-medium text-gray-800 mb-5">
+            {editing_id ? '✏️ Edit person' : 'New person'}
+          </h2>
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
@@ -102,7 +150,7 @@ export default function Personas() {
                 name="nombres"
                 value={form_data.nombres}
                 onChange={handleChange}
-                placeholder="Diego Alejandro"
+                placeholder="Hugo Armando"
                 required
               />
             </FormField>
@@ -112,7 +160,7 @@ export default function Personas() {
                 name="apellidos"
                 value={form_data.apellidos}
                 onChange={handleChange}
-                placeholder="Patiño Vega"
+                placeholder="Cristancho Chinome"
                 required
               />
             </FormField>
@@ -182,14 +230,14 @@ export default function Personas() {
               />
             </FormField>
 
-            <FormField label="Password">
+            <FormField label={editing_id ? 'New password (leave blank to keep)' : 'Password'}>
               <InputField
                 type="password"
                 name="contrasena"
                 value={form_data.contrasena}
                 onChange={handleChange}
                 placeholder="••••••••"
-                required
+                required={!editing_id}
               />
             </FormField>
 
@@ -197,7 +245,15 @@ export default function Personas() {
               <p className="text-red-500 text-sm md:col-span-2">{error_msg}</p>
             )}
 
-            <div className="md:col-span-2 flex justify-end mt-2">
+            <div className="md:col-span-2 flex justify-end gap-3 mt-2">
+              <button
+                type="button"
+                onClick={handleCancelForm}
+                className="border border-gray-300 hover:border-gray-400 text-gray-600
+                           text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
               <button
                 type="submit"
                 disabled={is_loading}
@@ -205,7 +261,10 @@ export default function Personas() {
                            text-white font-medium px-6 py-2.5 rounded-lg text-sm
                            transition-colors"
               >
-                {is_loading ? 'Saving...' : 'Save person'}
+                {is_loading
+                  ? 'Saving...'
+                  : editing_id ? 'Update person' : 'Save person'
+                }
               </button>
             </div>
 
@@ -231,24 +290,80 @@ export default function Personas() {
         ) : (
           <div className="divide-y divide-gray-50">
             {persons.map(person => (
-              <div key={person.id} className="px-6 py-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">
-                    {person.nombres} {person.apellidos}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {person.documento} · {person.ciudad}
-                  </p>
+              <div key={person.id}
+                   className="px-6 py-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center
+                                  justify-center text-violet-600 font-semibold text-sm
+                                  flex-shrink-0">
+                    {person.nombres?.charAt(0)}{person.apellidos?.charAt(0)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">
+                      {person.nombres} {person.apellidos}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {person.tipoDocumento} {person.documento} · {person.ciudad}
+                    </p>
+                  </div>
                 </div>
-                <span className="text-xs text-gray-400 bg-gray-100
-                                 px-2 py-1 rounded-md">
-                  @{person.usuario}
-                </span>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1
+                                   rounded-md hidden sm:block">
+                    @{person.usuario}
+                  </span>
+                  <button
+                    onClick={() => handleEdit(person)}
+                    className="text-xs text-violet-600 hover:text-violet-800 bg-violet-50
+                               hover:bg-violet-100 px-3 py-1.5 rounded-lg transition-colors
+                               font-medium"
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(person.id)}
+                    className="text-xs text-red-500 hover:text-red-700 bg-red-50
+                               hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors
+                               font-medium"
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {delete_confirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center
+                        justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Delete person</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              Are you sure? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="border border-gray-300 text-gray-600 text-sm font-medium
+                           px-4 py-2 rounded-lg hover:border-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(delete_confirm)}
+                className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium
+                           px-4 py-2 rounded-lg transition-colors"
+              >
+                Yes, delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )

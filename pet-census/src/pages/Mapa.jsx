@@ -5,25 +5,41 @@ import CensusMarker        from '../components/MapView/CensusMarker'
 import InfoWindow          from '../components/InfoWindow/InfoWindow'
 
 export default function Mapa() {
-  const [census_list, setCensusList]       = useState([])
+  const [census_list, setCensusList]         = useState([])
   const [selected_census, setSelectedCensus] = useState(null)
-  const [is_loading, setIsLoading]         = useState(true)
-  const [error_msg, setErrorMsg]           = useState('')
-  const [map_ref, setMapRef]               = useState(null)
+  const [is_loading, setIsLoading]           = useState(true)
+  const [error_msg, setErrorMsg]             = useState('')
+  const [map_ref, setMapRef]                 = useState(null)
 
-  useEffect(() => {
-    loadCensus()
+  // Declare handlers BEFORE using them
+  const handleMarkerClick = useCallback((census) => {
+    setSelectedCensus(census)
   }, [])
 
-  const loadCensus = async () => {
+  const handleCloseInfo = useCallback(() => {
+    setSelectedCensus(null)
+  }, [])
+
+  const handleMapLoad = useCallback((map) => {
+    setMapRef(map)
+  }, [])
+
+  const fitBounds = useCallback((map, data) => {
+    if (!window.google || data.length === 0) return
+    const bounds = new window.google.maps.LatLngBounds()
+    data.forEach(c => bounds.extend({
+      lat: parseFloat(c.lat),
+      lng: parseFloat(c.lon)
+    }))
+    map.fitBounds(bounds)
+  }, [])
+
+  const loadCensus = useCallback(async () => {
     setIsLoading(true)
     setErrorMsg('')
     try {
-      // Swap getAllCensusMock → getAllCensus when API is ready
       const data = await getAllCensusMock()
       setCensusList(data)
-
-      // Auto-fit map to markers if map is loaded
       if (map_ref && data.length > 0) fitBounds(map_ref, data)
     } catch (err) {
       setErrorMsg('Error loading census data.')
@@ -31,27 +47,11 @@ export default function Mapa() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [map_ref, fitBounds])
 
-  const fitBounds = (map, data) => {
-    if (!window.google || data.length === 0) return
-    const bounds = new window.google.maps.LatLngBounds()
-    data.forEach(c => bounds.extend({ lat: parseFloat(c.lat), lng: parseFloat(c.lon) }))
-    map.fitBounds(bounds)
-  }
-
-  const handleMapLoad = useCallback((map) => {
-    setMapRef(map)
-    if (census_list.length > 0) fitBounds(map, census_list)
-  }, [census_list])
-
-  const handleMarkerClick = (census) => {
-    setSelectedCensus(census)
-  }
-
-  const handleCloseInfo = () => {
-    setSelectedCensus(null)
-  }
+  useEffect(() => {
+    loadCensus()
+  }, [loadCensus])
 
   return (
     <div className="flex flex-col gap-4">
@@ -86,13 +86,16 @@ export default function Mapa() {
       )}
 
       {/* Map container */}
-      <div className="bg-white rounded-xl shadow overflow-hidden"
-           style={{ height: 'calc(100vh - 220px)', minHeight: '400px' }}>
+      <div
+        className="bg-white rounded-xl shadow overflow-hidden"
+        style={{ height: 'calc(100vh - 220px)', minHeight: '400px' }}
+      >
         <MapView onMapLoad={handleMapLoad}>
           {census_list.map(census => (
             <CensusMarker
               key={census.id}
               census={census}
+              map={map_ref}
               onClick={handleMarkerClick}
             />
           ))}

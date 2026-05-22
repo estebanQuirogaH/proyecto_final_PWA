@@ -13,6 +13,7 @@
     "@react-google-maps/api": "^2.20.8",
     "axios": "^1.16.0",
     "bcryptjs": "^3.0.3",
+    "dexie": "^4.4.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.15.0",

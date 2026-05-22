@@ -6,6 +6,8 @@ import useGeolocation        from '../hooks/useGeolocation'
 import PhotoCapture          from '../components/PhotoCapture'
 import FormField             from '../components/FormField'
 import SelectField           from '../components/SelectField'
+import { saveCensusLocally } from '../db/localDB'
+import useSyncStore          from '../store/syncStore'
 
 const initial_form = {
   petId:   '',
@@ -243,4 +245,46 @@ export default function Censo() {
       </form>
     </div>
   )
+}
+
+const handleSubmit = async (e) => {
+  e.preventDefault()
+
+  const validation_error = validateForm()
+  if (validation_error) { setErrorMsg(validation_error); return }
+
+  setIsLoading(true)
+  setErrorMsg('')
+  setSuccessMsg('')
+
+  try {
+    const selected_pet   = pets.find(p => p.id === form_data.petId)
+    const selected_owner = persons.find(p => p.id === form_data.ownerId)
+
+    const census_payload = {
+      ...form_data,
+      petSnapshot:   selected_pet,
+      ownerSnapshot: selected_owner
+    }
+
+    if (navigator.onLine) {
+      // Swap createCensusMock → createCensus when API is ready
+      await createCensusMock(census_payload)
+      setSuccessMsg('Census saved successfully! 🎉')
+    } else {
+      // Save locally when offline
+      await saveCensusLocally({
+        id:       crypto.randomUUID(),
+        ...census_payload
+      })
+      await useSyncStore.getState().refreshPendingCount()
+      setSuccessMsg('Saved locally — will sync when back online 📶')
+    }
+
+    setFormData(initial_form)
+  } catch (err) {
+    setErrorMsg('Error saving census. Please try again.')
+  } finally {
+    setIsLoading(false)
+  }
 }
