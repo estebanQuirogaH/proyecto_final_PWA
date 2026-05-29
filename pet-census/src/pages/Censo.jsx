@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { getAllPersonsMock } from '../api/personas_api'
-import { getAllPetsMock }    from '../api/mascotas_api'
-import { createCensusMock } from '../api/censos_api'
+import { getAllPersons } from '../api/personas_api'
+import { getAllPets }    from '../api/mascotas_api'
+import { createCensus } from '../api/censos_api'
 import useGeolocation        from '../hooks/useGeolocation'
 import PhotoCapture          from '../components/PhotoCapture'
 import FormField             from '../components/FormField'
@@ -38,8 +38,8 @@ export default function Censo() {
   const loadSelectData = async () => {
     try {
       const [persons_data, pets_data] = await Promise.all([
-        getAllPersonsMock(),
-        getAllPetsMock()
+        getAllPersons(),
+        getAllPets()
       ])
       setPersons(persons_data)
       setPets(pets_data)
@@ -81,7 +81,7 @@ export default function Censo() {
       const selected_owner = persons.find(p => p.id === form_data.ownerId)
 
       // Swap createCensusMock → createCensus when API is ready
-      await createCensusMock({
+      await createCensus({
         ...form_data,
         petSnapshot:   selected_pet,
         ownerSnapshot: selected_owner
@@ -269,7 +269,7 @@ const handleSubmit = async (e) => {
 
     if (navigator.onLine) {
       // Swap createCensusMock → createCensus when API is ready
-      await createCensusMock(census_payload)
+      await createCensus(census_payload)
       setSuccessMsg('Census saved successfully! 🎉')
     } else {
       // Save locally when offline

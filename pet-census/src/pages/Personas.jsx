@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
-  createPersonMock, getAllPersonsMock,
-  updatePersonMock, deletePersonMock
+  createPerson, getAllPersons,
+  updatePerson, deletePerson
 } from '../api/personas_api'
 import FormField  from '../components/FormField'
 import InputField from '../components/InputField'
@@ -34,7 +34,7 @@ export default function Personas() {
 
   const loadPersons = async () => {
     try {
-      const data = await getAllPersonsMock()
+      const data = await getAllPersons()
       setPersons(data)
     } catch (err) {
       console.error('Error loading persons:', err)
@@ -80,10 +80,10 @@ export default function Personas() {
 
     try {
       if (editing_id) {
-        await updatePersonMock(editing_id, form_data)
+        await updatePerson(editing_id, form_data)
         setSuccessMsg(`${form_data.nombres} updated successfully`)
       } else {
-        await createPersonMock(form_data)
+        await createPerson(form_data)
         setSuccessMsg(`${form_data.nombres} registered successfully`)
       }
       setFormData(empty_form)
@@ -99,7 +99,7 @@ export default function Personas() {
 
   const handleDelete = async (id) => {
     try {
-      await deletePersonMock(id)
+      await deletePerson(id)
       setDeleteConfirm(null)
       await loadPersons()
     } catch (err) {

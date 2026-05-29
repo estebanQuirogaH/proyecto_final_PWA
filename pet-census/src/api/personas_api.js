@@ -35,7 +35,7 @@ export const deletePerson = async (id) => {
   return response.data
 }
 
-export const createPersonMock = async (person_data) => {
+export const createPersonMockz = async (person_data) => {
   await new Promise(resolve => setTimeout(resolve, 600))
   const saved = {
     id:            uuidv4(),

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getAllCensusMock } from '../api/censos_api'
+import { getAllCensus } from '../api/censos_api'
 import MapView             from '../components/MapView/MapView'
 import CensusMarker        from '../components/MapView/CensusMarker'
 import InfoWindow          from '../components/InfoWindow/InfoWindow'
@@ -38,7 +38,7 @@ export default function Mapa() {
     setIsLoading(true)
     setErrorMsg('')
     try {
-      const data = await getAllCensusMock()
+      const data = await getAllCensus()
       setCensusList(data)
       if (map_ref && data.length > 0) fitBounds(map_ref, data)
     } catch (err) {

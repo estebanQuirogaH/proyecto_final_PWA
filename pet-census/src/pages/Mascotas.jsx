@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
-  createPetMock, getAllPetsMock,
-  updatePetMock, deletePetMock,
+  createPet, getAllPets,
+  updatePet, deletePet,
   pet_types, pet_genders
 } from '../api/mascotas_api'
 import FormField    from '../components/FormField'
@@ -39,7 +39,7 @@ export default function Mascotas() {
 
   const loadPets = async () => {
     try {
-      const data = await getAllPetsMock()
+      const data = await getAllPets()
       setPets(data)
     } catch (err) {
       console.error('Error loading pets:', err)
@@ -85,10 +85,10 @@ export default function Mascotas() {
 
     try {
       if (editing_id) {
-        await updatePetMock(editing_id, form_data)
+        await updatePet(editing_id, form_data)
         setSuccessMsg(`${form_data.nombre} updated successfully`)
       } else {
-        await createPetMock(form_data)
+        await createPet(form_data)
         setSuccessMsg(`${form_data.nombre} registered successfully`)
       }
       setFormData(empty_form)
@@ -104,7 +104,7 @@ export default function Mascotas() {
 
   const handleDelete = async (id) => {
     try {
-      await deletePetMock(id)
+      await deletePet(id)
       setDeleteConfirm(null)
       await loadPets()
     } catch (err) {
